@@ -44,24 +44,43 @@ Giscus keys threads on the numeric `repo-id`, so **renaming the repository
 later will not orphan existing comments**. The repository name is a cheap
 decision; the domain is not.
 
-## C. One-time: Cloudflare Pages
+## C. One-time: GitHub Pages
 
-Connect the repository as a Pages project:
+*Revision 3 — was Cloudflare Pages. See spec.md → Revision History.*
 
-| Setting | Value |
-|---|---|
-| Framework preset | Astro |
-| Build command | `npm run build` |
-| Output directory | `dist` |
-| Production branch | `main` |
-| Environment variable | `NODE_VERSION=24` |
+1. Settings → Pages → **Source: GitHub Actions**. Nothing else to configure;
+   `.github/workflows/deploy.yml` does the rest.
+2. Settings → Pages → **Custom domain**: `pacheco-ops.com`.
+3. DNS for the apex domain — four A records, and AAAA if you want IPv6:
 
-No adapter and no Workers configuration — a fully static Astro site needs
-neither (`research.md` §7).
+   ```
+   A     185.199.108.153
+   A     185.199.109.153
+   A     185.199.110.153
+   A     185.199.111.153
 
-Set the custom domain once the name is decided, and set the same URL in
-`site.config.mjs`. That file is the single source for the canonical link, so
-this is one edit in one place.
+   AAAA  2606:50c0:8000::153
+   AAAA  2606:50c0:8001::153
+   AAAA  2606:50c0:8002::153
+   AAAA  2606:50c0:8003::153
+   ```
+
+   GitHub also accepts an ALIAS/ANAME record pointing at the default
+   `<user>.github.io` domain, if the DNS provider supports one.
+
+4. Settings → Pages → **Enforce HTTPS**. It can take **up to 24 hours** to
+   become available after the domain is set — a one-time launch-day wait, not
+   a recurring cost.
+
+The `CNAME` file GitHub Pages needs is **generated at build time** from
+`SITE_URL` in `site.config.mjs`, not committed. The domain therefore has one
+definition, and changing it is one line.
+
+> **If DNS is on Cloudflare**: keep the records **DNS-only** (grey cloud), or
+> set SSL/TLS mode to Full. Proxied records against Pages with Flexible SSL
+> produce redirect loops.
+
+No adapter and no framework preset — a fully static Astro site needs neither.
 
 ## D. One-time: the site name
 
@@ -89,7 +108,8 @@ Ordinary post, no LinkedIn:
 2. Fill the frontmatter; set `draft: false` when ready.
 3. `npm run build` — optional but recommended; it runs the lint and tells you
    about a bad filename or teaser in two seconds rather than in CI.
-4. `git push`. Cloudflare builds and deploys.
+4. `git push`. The `deploy` workflow builds, deploys to Pages, and only then
+   runs the syndication job.
 
 You are **not** required to run step 3. The syndication workflow runs the same
 build itself and refuses to offer any post it cannot see in the build output —
