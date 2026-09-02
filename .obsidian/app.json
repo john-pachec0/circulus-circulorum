@@ -1,0 +1,21 @@
+{
+  "useMarkdownLinks": true,
+  "newLinkFormat": "relative",
+  "attachmentFolderPath": "./attachments",
+  "alwaysUpdateLinks": true,
+  "userIgnoreFilters": [
+    "node_modules/",
+    "dist/",
+    ".astro/",
+    ".github/",
+    ".specify/",
+    "scripts/",
+    "specs/",
+    "src/components/",
+    "src/layouts/",
+    "src/pages/",
+    "src/styles/"
+  ],
+  "showUnsupportedFiles": false,
+  "strictLineBreaks": false
+}

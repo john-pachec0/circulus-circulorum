@@ -1,7 +1,12 @@
 node_modules/
 dist/
 .astro/
+
+# Churns on every pane move; the rest of .obsidian/ is committed so a fresh
+# clone is a working vault.
 .obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
 .env
 .env.*
 .DS_Store
