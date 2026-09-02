@@ -68,11 +68,13 @@ annually. Refresh credential expires at 365 days, access token at 60.
 
 **Re-check after design**: no violations. Complexity Tracking is empty.
 
-One thing worth naming rather than hiding: the `article` and `inline` link
-strategies (§7.5) are built before either is known to be needed, which brushes
-against Principle V. They are not speculation — FR-023 and SC-008 require the
-fallback to be a config change, and `research.md` §2 shows a live probability
-the default is unavailable. That requirement is what justifies them.
+An earlier draft of this plan built all three link strategies (§7.5) before any
+was known to be needed, and justified it by citing FR-023 and SC-008 —
+requirements written by the same author, in the same proposal, to permit it.
+The adversarial gate called that circular and it was: the probe needs nothing
+built, so the honest order is to *learn the answer first* and write one
+strategy. Build order revised (§12); Principle V now passes without an
+argument propping it up.
 
 ## Project Structure
 
@@ -664,16 +666,31 @@ Steps 3–6 need the author's LinkedIn account and are theirs to run.
 
 ## 12. Build order and definition of done
 
+**Revised at sign-off (2026-09-02), owner decision on adversarial finding 3.**
+The probe moves to the front. It needs nothing built — no site, no Cloudflare,
+no Giscus, no scripts beyond the bootstrap — so running it first turns
+`research.md` §2 from a design constraint into a fact, and exactly **one** link
+strategy ever gets written.
+
 | Phase | Scope | Done when |
 |---|---|---|
-| 1 | Astro site, collection, layouts, RSS, sitemap, fixtures | §11 Phase 1 green, deployed to Pages |
+| **0** | `scripts/oauth-bootstrap.mjs`; owner runs `quickstart.md` §A + §B | The probe has returned a status code, `research.md` open questions 1 and 2 are answered, and the link strategy is chosen |
+| 1 | Astro site, collection, layouts, RSS, sitemap, `lint-posts.mjs`, fixtures | §11 Phase 1 green, deployed to Pages |
 | 2 | Obsidian config, gitignore, image round-trip | §11 Phase 2 green |
 | 3 | Giscus | §11 Phase 3 green, one real comment posted and deleted |
-| 4 | `syndicate.yml`, `li-token-health.yml`, scripts, tests | **NOT done** until the `quickstart.md` probe has run and `LI_LINK_STRATEGY` is set |
+| 4 | `syndicate.yml`, `li-token-health.yml`, `lib/`, tests | §11 Phase 4 green and one real post syndicated end to end |
 
-Phase 4 ships with `LI_LINK_STRATEGY` defaulting to `comment` and `article`
-implemented but unexercised, per the owner's instruction that Phase 4 stays
-open until the permission question is answered.
+**Only the strategy the probe selects is implemented.** `LI_LINK_STRATEGY`
+stays as the selection mechanism — it costs one env read and keeps FR-023
+honest — but the losing strategies are not written. If the probe returns 201,
+`comment` is built and `article`/`inline` are not.
+
+**Deferred owner decision.** If the probe returns 403, the choice between the
+`article` card and an inline URL is not pre-committed (owner deferred at
+sign-off, adversarial finding 4). That decision then also requires settling
+`research.md` open question 4 — whether `content.article` needs a thumbnail,
+because if it does, `article` additionally needs the Images API upload flow and
+stops being a cheap fallback. Resolve both before writing either.
 
 ## Complexity Tracking
 

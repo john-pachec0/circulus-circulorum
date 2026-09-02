@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-02
 
-**Status**: Draft — awaiting owner approval
+**Status**: Approved 2026-09-02, after CHALLENGE gate (PROCEED-WITH-CHANGES; blocker fixed pre-approval). Build order revised — see Adversarial Review → Owner decisions.
 
 **Input**: User description: "A personal blog written in Obsidian and built by Astro from the same directory, deployed to Cloudflare Pages, with Giscus comments backed by GitHub Discussions, and a GitHub Action that syndicates selected posts to LinkedIn as plain-text posts with the canonical URL in the first comment — so the author can publish to LinkedIn without ever logging in."
 
@@ -396,7 +396,16 @@ Recorded rather than dropped:
   relitigated** — named only so that "checked and unverifiable" does not read
   as "never checked".
 
-### Owner decision required before Phase 4
+### Owner decisions at sign-off (2026-09-02)
 
-Findings 3 and 4 are not defects; they are questions only the owner can answer.
-They are carried into the sign-off questions below rather than resolved here.
+| Question | Decision |
+|---|---|
+| Finding 3 — build order | **Probe first.** The permission probe runs before any Phase 1–4 code; only the link strategy it selects is implemented. plan.md §12 revised, Phase 0 added |
+| Finding 4 — is an `article` link card an acceptable substitute? | **Deferred until the probe answers.** Not pre-committed; if the probe returns 403 this becomes a live decision, and `research.md` open question 4 (thumbnail requirement) must be settled with it |
+| `waitForLive` (beyond the brief) | **Keep**, 5-minute cap. Never publish a LinkedIn post whose link 404s |
+| Kebab-case filenames | **Enforce**, at build time per finding 8 |
+| Unconditional `little` escaping | **Accepted as default** — a `#tag` in `linkedinText` renders as literal text, not a LinkedIn hashtag |
+
+**Status**: approved to proceed in the revised order. Phase 0 is the next
+action and it is owner-executed; no Phase 1–4 code is written until the probe
+has returned a result.
