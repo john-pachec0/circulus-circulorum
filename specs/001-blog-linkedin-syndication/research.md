@@ -312,9 +312,21 @@ the next reader.
 
 ## Open questions carried into implementation
 
-| # | Question | Settled by | If it goes the wrong way |
+> Rewritten for revision 2b. The previous version of this table was left
+> pointing at withdrawn requirements and a probe that no longer exists — row 1
+> still read "run it **before writing Phase 4 code**". `/speckit-tasks` consumes
+> this file, so a stale row here becomes a stale task.
+
+| # | Question | Status | Settled by |
 |---|---|---|---|
-| 1 | Can `w_member_social` create comments? (§2) | `quickstart.md` probe — **run it before writing Phase 4 code** | `LI_LINK_STRATEGY=article`, but see §11: that may not be config-only, and it is a different post format |
-| 2 | Does this app get a refresh token? (§3) | Bootstrap output, step 4 | `LI_ACCESS_TOKEN` secret, re-minted every 60 days |
-| 3 | Does Astro resolve Obsidian's bare relative image paths? (§6) | Phase 2 build test, fixture `draft: false` | four-line remark plugin normalising the prefix |
-| 4 | Does `content.article` need a thumbnail? (§11) | Fetch the ads ArticleContent page, only if the probe returns 403 | `article` needs the Images API upload flow; re-plan the fallback |
+| 1 | Can `w_member_social` create comments? (§2) | **DEAD** — no API integration | — |
+| 2 | Does this app get a refresh token? (§3) | **DEAD** — no credential | — |
+| 3 | Does Astro resolve Obsidian's bare relative image paths? (§6) | **LIVE** | Phase 2 build test, fixture pinned `draft: false`. Fallback: four-line remark plugin normalising the prefix |
+| 4 | Does `content.article` need a thumbnail? | **DEAD** — no article posts | — |
+| 5 | Does GitHub's copy button on a fenced block in an issue body copy exactly the block's bytes, trailing newline included? | **LIVE** | Observation on the first real issue. FR-020 and SC-007 depend on it. If it misbehaves, the fallback is an attached file or a plain indented block |
+| 6 | Does LinkedIn's composer preserve pasted plain text — smart quotes, autocorrect, newlines, `@` interception, auto-linkification? | **LIVE, and structurally unverifiable in CI** | Eyeball the first real paste. Recorded here rather than asserted as a success criterion (see spec.md SC-007) |
+
+Cross-reference note for anyone following links out of the historical sections:
+they cite `plan.md` section numbers and FR/SC identifiers **from revision 1**,
+which have since been renumbered and in most cases withdrawn. Read them as a
+record of what was investigated, not as pointers into the current plan.

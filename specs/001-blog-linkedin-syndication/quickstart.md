@@ -20,7 +20,12 @@ deploying it and for the syndication assist.
    matters: only maintainers can open Announcement threads, so giscus creates
    them and nobody else can seed the category with junk.
 4. Install the [giscus app](https://github.com/apps/giscus) on the repository.
-5. Create the label `syndicate` (any colour). The workflow filters on it.
+5. Optionally create the label `syndicate` (any colour). It is applied to new
+   issues as a filing convenience only — **nothing depends on it**.
+   Deduplication matches on the issue title, because a label can be stripped
+   and `gh issue list --label <missing>` returns an empty set with a success
+   exit code, which would read as "nothing has been syndicated yet" and
+   re-offer every past post.
 
 No secrets are configured at any point. The workflow uses the automatic
 `GITHUB_TOKEN`, scoped to `issues: write` and `contents: read`.
@@ -82,7 +87,13 @@ Ordinary post, no LinkedIn:
 
 1. Write the note in Obsidian under `src/content/posts/`, kebab-case filename.
 2. Fill the frontmatter; set `draft: false` when ready.
-3. `git push`. Cloudflare builds it.
+3. `npm run build` — optional but recommended; it runs the lint and tells you
+   about a bad filename or teaser in two seconds rather than in CI.
+4. `git push`. Cloudflare builds and deploys.
+
+You are **not** required to run step 3. The syndication workflow runs the same
+build itself and refuses to offer any post it cannot see in the build output —
+that guarantee is deliberately not dependent on your local habits.
 
 Post you also want on LinkedIn — add one frontmatter field:
 

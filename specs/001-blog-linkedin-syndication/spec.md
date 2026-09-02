@@ -22,6 +22,7 @@ LinkedIn post text and canonical link as a GitHub issue for the author to paste
 |---|---|---|
 | 1 | 2026-09-02 | Original: automatic syndication via the LinkedIn Posts API, with `linkedinUrn` frontmatter as an idempotency ledger |
 | 2 | 2026-09-02 | **Scope narrowed.** LinkedIn API integration dropped entirely. The workflow now opens a GitHub issue containing paste-ready text; the author pastes it when convenient |
+| 2b | 2026-09-02 | Two blockers from the revision 2 adversarial gate fixed: validation was claimed to run before the workflow but never did, and deduplication depended on a mutable label that fails silently. See Adversarial Review |
 
 ### Why revision 2
 
@@ -159,8 +160,13 @@ test.
 6. **Given** a `linkedinText` longer than the configured guard, **When** the
    site builds, **Then** the build fails reporting the actual length, and the
    text is never truncated.
-7. **Given** the author pastes the two blocks into LinkedIn, **Then** the text
-   appears exactly as authored — no escaping artifacts, no markdown syntax.
+7. **Given** the author copies a block out of the issue, **Then** the copied
+   text is exactly the `linkedinText` in the repository — no escaping
+   artifacts, no markdown interpretation, and no truncation even if the teaser
+   itself contains backticks.
+8. **Given** a post that would fail validation, or whose page the site build
+   does not produce, **When** it is pushed, **Then** no issue is created —
+   regardless of whether the author ran a build locally.
 
 ---
 
@@ -228,13 +234,30 @@ test.
 - **FR-016**: Issue creation MUST be idempotent, keyed to the post's slug and
   deduplicated against issues in any state. Re-pushing MUST NOT create a second
   issue.
+- **FR-016a**: Deduplication MUST NOT depend on any mutable or removable
+  attribute of an issue, such as a label. A query that returns "no issues" MUST
+  be distinguishable from a query that failed or was filtered to nothing.
+  *(Added at the revision 2 gate: a stripped label returns an empty set with a
+  success exit code, which reads as "nothing has been syndicated yet" and
+  re-offers every past post.)*
+- **FR-016b**: Concurrent runs MUST be serialised. A duplicate issue is not
+  harmless: the author's routine is to paste what an issue says without
+  re-deciding, so a spurious issue becomes a spurious public post.
 - **FR-017**: The system MUST NOT write to the repository, hold any credential
   for an external service, or make any request to LinkedIn. Its only privilege
   is opening issues in its own repository.
 - **FR-018**: `linkedinText` MUST be validated at **build** time — non-empty
-  when present, within a configurable length guard, and containing no URL — so
-  a violation fails on the author's own machine before it can reach the
-  workflow. It MUST NEVER be truncated or altered.
+  when present, within a configurable length guard, and containing no URL. It
+  MUST NEVER be truncated or altered.
+- **FR-018a**: The system MUST NOT rely on the author having run that build.
+  The syndication workflow MUST itself run the build and abort before its first
+  network call if validation fails. *(Added at the revision 2 gate: the
+  documented publishing routine is write → push, with no local build in it, and
+  the site build and the syndication workflow are independent — so a post can
+  reach syndication having never been validated.)*
+- **FR-018b**: A post MUST NOT be offered for syndication unless its page
+  actually exists in the build output. Frontmatter claiming a post is published
+  is not sufficient evidence that a URL exists to link to.
 - **FR-019**: A filename that would not round-trip to the canonical slug MUST
   fail at build time.
 - **FR-020**: The teaser MUST be stored and emitted as literal plain text with
@@ -267,8 +290,14 @@ test.
   inspection.
 - **SC-006**: The repository holds no credential for any external service, and
   no workflow in it has write access to repository contents.
-- **SC-007**: Text pasted into LinkedIn is byte-identical to the `linkedinText`
-  in the repository.
+- **SC-007**: The text the author copies out of the issue is byte-identical to
+  the `linkedinText` in the repository, including when the teaser contains
+  backticks, emoji, or markdown-significant characters. *(Reworded at the
+  revision 2 gate. The original claimed byte-identity of what lands **in
+  LinkedIn**, which revision 2 made structurally unmeasurable by removing every
+  LinkedIn read path. What happens after the clipboard — smart quotes,
+  autocorrect, the composer's own newline handling — is unverified and recorded
+  as such in `research.md` §11 rather than asserted here.)*
 - **SC-008**: Zero secrets appear anywhere in the repository or its history.
 
 ## Assumptions
@@ -293,7 +322,59 @@ test.
 | Gate | Reviewer | Date | Verdict | Applies to |
 |---|---|---|---|---|
 | CHALLENGE | `challenge-reviewer` | 2026-09-02 | **PROCEED-WITH-CHANGES** | Revision 1 |
-| CHALLENGE | — | — | pending | Revision 2 |
+| CHALLENGE | `challenge-reviewer` | 2026-09-02 | **PROCEED-WITH-CHANGES** | Revision 2 → fixes are revision 2b |
+
+### Revision 2 record
+
+Two blockers. Both were mine, and both are the same mistake in different
+clothing: **asserting a safety property rather than measuring it.**
+
+**Strongest objection against revision 2:**
+
+> FR-018 and the Constitution Check for Principle III both rest on "validation
+> runs at build time, so a violation fails on the author's own machine before it
+> can reach the workflow" — but nothing enforces that ordering, and the workflow
+> never runs the lint: its steps are checkout, setup-node, `npm ci`,
+> `syndicate-issue.mjs`, so `prebuild` never fires. Meanwhile the documented
+> publishing routine is "write the note → set `draft: false` → `git push`" with
+> no local build in it at all. So: the author creates `My First Post.md` with
+> `draft: false` and a teaser and pushes; the Cloudflare build fails on the
+> kebab-case rule — leaving the *previous* deployment live, so the site looks
+> fine — while the independent syndication workflow opens an issue whose block 2
+> is `https://site/posts/My First Post/`. Hours later the author pastes that
+> into a public LinkedIn comment: a 404 link to a post that was never deployed,
+> and "you will not go back and edit those."
+
+The second blocker attacked the premise the whole revision rests on. Revision 2
+said "worst-case failure becomes a duplicate issue" — but the routine is *open
+issue → paste → paste → close*, so **a duplicate issue is a duplicate public
+post, by the author's own hand.** The premise elided the human step. Verified
+directly: `gh issue list --label <stripped-label> --state all` returns `[]` with
+exit code 0, so a label removed during any tidying silently makes every past
+post look un-offered.
+
+| # | Sev | Finding | Fix in 2b |
+|---|---|---|---|
+| 1 | blocker | Validation claimed to run before the workflow; workflow never ran it | Workflow runs `npm run build` (firing `prebuild`) before `syndicate-issue.mjs`; FR-018a, FR-018b added |
+| 2 | blocker | "A duplicate issue is harmless" ignores that the author pastes it; label-based dedupe fails silently | Dedupe by title prefix over all issues, no label dependency; FR-016a added |
+| 3 | major | SC-003 promised no duplicates on concurrent pushes; plan explicitly accepted that race | `concurrency` group added; FR-016b added |
+| 4 | major | A teaser containing ``` closes the fence early ⇒ copy button yields truncated text | Fence sized to the longest backtick run + 1; fixture and test added |
+| 5 | major | `draft` **omitted** is the default-draft case and was untested; `!data.draft` would select it while Astro emits no page | Script states `data.draft === false` explicitly; the omitted case is now its own test |
+| 6 | major | Nothing tied the script's slug to the path Astro actually emits | The script asserts `dist/posts/<slug>/index.html` exists before offering a post |
+| 7 | major | Constitution Check asserted PASS on II and III while both were violated; and claimed an amendment was owed that was already applied | Both now measured, with the tests named; stale task removed |
+| 8 | major | Stale cross-references in `research.md` to renumbered sections and withdrawn requirements | Open-questions table marked historical; `plan.md` sections renumbered sequentially |
+| 9 | minor | SC-007 claimed byte-identity into LinkedIn, unmeasurable by construction | Reworded to end at the clipboard; the rest recorded as unverified |
+| 10 | minor | `--limit 500` silently drops the **oldest** issues on overflow — the long-since-pasted ones | Explicit ceiling guard that throws |
+
+**Confirmed sound, do not "fix"**: a repository rename does not orphan Giscus
+comments — GitHub's GraphQL API follows renames, so both the numeric `repo-id`
+and a stale `data-repo` string keep resolving.
+
+**Accepted and not fixed**: nothing enforces that published slugs are
+immutable. Renaming a published post produces a second issue and, if pasted, a
+duplicate LinkedIn post pointing at a now-dead URL. Enforcing it means tracking
+every slug ever published — a ledger, which is what revision 2 deleted. Recorded
+as failure mode 8 in `plan.md` §6 rather than hidden.
 
 ### Revision 1 record — retained deliberately
 
