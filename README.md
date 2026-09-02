@@ -20,9 +20,15 @@ npm install
 npm run dev          # http://localhost:4321 — drafts ARE visible here
 ```
 
-To open the vault: Obsidian → *Open folder as vault* → this directory. Editor
-settings are committed, so a fresh clone is already configured — markdown-style
-image links, build directories excluded from search.
+To open the vault: Obsidian → *Open folder as vault* → **this directory, the
+repo root**. Editor settings are committed, so a fresh clone is already
+configured — markdown-style image links, build directories excluded from search.
+
+> Open the **repo root**, not `src/content` or a subfolder. Obsidian writes a
+> fresh config into whatever folder you open, and its default
+> `useMarkdownLinks: false` produces `![[wikilinks]]` that Astro cannot
+> resolve. Stray nested `.obsidian/` folders are gitignored, but the setting
+> that matters only applies when the vault root is the repo root.
 
 ## Commands
 
@@ -37,10 +43,20 @@ image links, build directories excluded from search.
 
 ## Writing a post
 
-Create `src/content/posts/<kebab-case-name>.md`. **The filename becomes the
-URL**, so it must match `[a-z0-9-]+` — the lint enforces this at build time, on
-purpose: a filename problem discovered after a post is live and linked cannot
-be fixed by renaming without breaking those links.
+**In Obsidian:** create a note in `src/content/posts/`, then *Insert template*
+→ `post`. The core Templates plugin is enabled and pointed at `templates/`, so
+the frontmatter arrives filled in with today's date and the rest of the fields
+stubbed. Guidance lives in YAML comments inside the frontmatter, so anything
+you leave behind is stripped by the parser and never reaches the built HTML.
+
+Templates live in `templates/` at the repo root, deliberately outside
+`src/content/posts/` — anything under that path is a post as far as the build
+is concerned, and the template's placeholder frontmatter would fail the lint.
+
+**The filename becomes the URL**, so it must match `[a-z0-9-]+` — the lint
+enforces this at build time, on purpose: a filename problem discovered after a
+post is live and linked cannot be fixed by renaming without breaking those
+links.
 
 ```yaml
 ---

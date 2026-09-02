@@ -7,6 +7,12 @@ dist/
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 
+# The vault root is the REPO root. Opening a subfolder as its own vault makes
+# Obsidian write a second config there with useMarkdownLinks defaulting to
+# false — which emits ![[wikilinks]] that Astro cannot resolve. Keep any such
+# stray config out of the repo.
+src/**/.obsidian/
+
 .env
 .env.*
 .DS_Store
