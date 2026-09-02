@@ -1,0 +1,96 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Deny by default; each job asks for exactly what it needs.
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # A broken selection or validation rule must not reach a deploy that
+      # then triggers syndication.
+      - run: npm test
+
+      # Fires `prebuild` -> lint-posts.mjs. Deliberately NOT passing --site
+      # from actions/configure-pages: site.config.mjs is the single source of
+      # truth for the URL, and letting Pages inject its own origin would emit
+      # github.io canonical URLs any time the custom domain was not yet set.
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      # The same bytes, for the syndicate job to inspect. Downloading this
+      # rather than rebuilding means the page-existence check runs against
+      # what was actually deployed.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  # `needs: deploy` is the point of moving off Cloudflare. Hosting and
+  # syndication used to be independent processes, so a failed build left the
+  # previous deployment live while an issue was still opened linking to a page
+  # that was never published. Now an issue cannot exist before the page does.
+  syndicate:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # Still checks dist/posts/<slug>/index.html. `needs: deploy` proves the
+      # SITE deployed; this proves THIS POST's page is in it, which is the only
+      # thing tying the script's slug to the path Astro emitted.
+      - run: node scripts/syndicate-issue.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

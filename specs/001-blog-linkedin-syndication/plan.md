@@ -2,15 +2,15 @@
 
 **Branch**: `001-blog-linkedin-syndication` | **Date**: 2026-09-02 | **Spec**: [spec.md](./spec.md)
 
-**Revision**: 2b — LinkedIn API integration removed (rev 2), then two blockers
-from the rev 2 adversarial gate fixed (rev 2b). Revision 1's design is preserved
-in git history at `3617c1e`. Sections are numbered sequentially as of 2b; rev 2
-inherited gaps from rev 1's numbering.
+**Revision**: 3 — LinkedIn API integration removed (rev 2), two blockers from
+the rev 2 adversarial gate fixed (rev 2b), hosting moved from Cloudflare Pages
+to GitHub Pages (rev 3). Revision 1's design is preserved in git history at
+`3617c1e`. Sections are numbered sequentially as of 2b.
 
 ## Summary
 
 One directory that is simultaneously an Astro site and an Obsidian vault.
-Static build to Cloudflare Pages on push. Comments via Giscus on this repo's
+Static build to GitHub Pages on push. Comments via Giscus on this repo's
 Discussions. On publish, a GitHub Action builds the site, confirms the post's
 page actually exists in the build output, and opens an issue containing
 paste-ready LinkedIn text; the author pastes it when convenient.
@@ -42,7 +42,7 @@ hand-rolled block-scalar parsing is the flimsier algorithm.
 **Testing**: `node:assert` in `scripts/test-posts.mjs` via `npm test`;
 build-output assertions for draft exclusion and slug agreement.
 
-**Target Platform**: Static site on Cloudflare Pages; scripts on
+**Target Platform**: Static site on GitHub Pages; scripts on
 `ubuntu-latest` runners and the author's macOS machine.
 
 **Project Type**: Static site plus four small scripts. Single project.
@@ -62,8 +62,8 @@ publication.
 |---|---|---|
 | I. Vault and site are one directory | PASS | Posts build from `src/content/posts/` in place; attachments beside notes |
 | II. One-way and write-once | PASS **as of 2b** | Amended Principle II says "offered for syndication at most once". Rev 2 accepted a concurrent-run race that violated this; 2b adds a `concurrency` group (§5.1). Dedupe no longer depends on a mutable label (§5.3) |
-| III. Fail loudly, publish nothing on doubt | PASS **as of 2b** | Amended Principle III requires validation "before the first network call". Rev 2 asserted this while its workflow never ran the lint; 2b runs the full build first and aborts on failure (§5.1, §5.2) |
-| IV. No secret in the repo | PASS | No credentials at all. Only `GITHUB_TOKEN`, scoped `issues: write` / `contents: read` |
+| III. Fail loudly, publish nothing on doubt | PASS **as of 2b, strengthened in 3** | Amended Principle III requires validation "before the first network call". Rev 2 asserted this while its workflow never ran the lint; 2b runs the full build first. Rev 3 goes further: `needs: deploy` means syndication cannot start until the site is live, so the ordering is enforced by the platform rather than by a check |
+| IV. No secret in the repo | PASS, strengthened in 3 | No credentials at all. Top-level `permissions: {}` denies everything and each job requests only what it needs; no job in the workflow can write to repository contents |
 | V. Smallest thing that works | PASS | One dependency; four scripts; no abstraction with a single caller |
 
 Both II and III were **asserted** passes in revision 2 and were false. They are
@@ -91,7 +91,7 @@ specs/001-blog-linkedin-syndication/
 
 ```text
 .github/workflows/
-└── syndicate-issue.yml        # push:main → build, verify, open paste-ready issues
+└── deploy.yml                 # push:main → build ▸ deploy ▸ syndicate
 
 .obsidian/                     # committed EXCEPT workspace.json
 ├── app.json
@@ -223,31 +223,44 @@ const published = (await getCollection('posts'))
   .filter(p => import.meta.env.PROD ? !p.data.draft : true);
 ```
 
-## 2. Astro and Cloudflare config
+## 2. Astro and GitHub Pages config
+
+*Revision 3: hosting moved off Cloudflare Pages.*
 
 ```js
-// astro.config.mjs
-import { defineConfig } from 'astro/config';
-import sitemap from '@astrojs/sitemap';
-import { SITE_URL } from './site.config.mjs';
-
+// astro.config.mjs — abbreviated; see the file for the CNAME integration
 export default defineConfig({
   site: SITE_URL,
   output: 'static',
-  integrations: [sitemap()],
+  integrations: [sitemap({ filter: (p) => !p.includes('/404') }), cname],
   markdown: { shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } } },
 });
 ```
 
-No adapter — a fully static site needs none (`research.md` §7).
+No adapter — a fully static site needs none.
 
-Cloudflare Pages: preset Astro, build `npm run build`, output `dist`,
-production branch `main`, `NODE_VERSION=24`.
+**Why the move.** Under Cloudflare the site build and the syndication workflow
+were **independent processes**: a failed build left the previous deployment
+live while the workflow still opened an issue linking to a page that was never
+published. That independence *is* the 2b blocker. On GitHub Pages both are jobs
+in one workflow, so `needs: deploy` (§5.1) makes an issue physically impossible
+before the page is live — the failure class is retired rather than guarded
+(FR-018c).
 
-Note that the Cloudflare build and the syndication workflow are **independent**
-— a failed Cloudflare build leaves the previous deployment live and does not
-stop the workflow. That decoupling is what made the 2b blocker possible, and it
-is why §5.2 verifies the build itself rather than inferring it succeeded.
+**The `--site` trap, avoided deliberately.** GitHub's own Astro starter
+workflow builds with `--site "${{ steps.pages.outputs.origin }}"` from
+`actions/configure-pages`. This project does **not**, and does not use that
+action at all. If the custom domain were ever unset or mid-propagation, that
+origin would be `https://<user>.github.io`, and the build would emit github.io
+canonical URLs — straight into a LinkedIn issue, permanently. `site.config.mjs`
+stays the single source of truth (FR-018d).
+
+**CNAME.** GitHub Pages needs a `CNAME` file in the published artifact to keep
+a custom domain attached across Actions deploys. It is **generated at build
+time from `SITE_URL`** by a six-line `astro:build:done` hook, not committed as
+`public/CNAME` — two files naming the domain is exactly the drift this design
+exists to prevent. Verified by falsification: changing `SITE_URL` changes
+`dist/CNAME`.
 
 ## 3. Giscus
 
@@ -302,41 +315,48 @@ Open verification: whether Astro resolves a bare `attachments/x.png`. Tested in
 
 ### 5.1 Workflow
 
-```yaml
-name: syndicate-issue
-on:
-  push:
-    branches: [main]
-    paths: ['src/content/posts/**']
-  workflow_dispatch:
-concurrency:
-  group: syndicate-issue      # SC-003 requires this; see 5.4
-  cancel-in-progress: false
-permissions:
-  contents: read              # READ. Nothing writes to the repo.
-  issues: write
-jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 24 }
-      - run: npm ci
-      # Fires `prebuild` -> lint-posts.mjs, then builds. A validation failure
-      # or a broken build aborts the job before its first network call.
-      # Without this step the workflow offers posts that were never validated
-      # and whose pages may not exist. That was the 2b blocker.
-      - run: npm run build
-      - run: node scripts/syndicate-issue.mjs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+*Revision 3: one workflow, three jobs — `.github/workflows/deploy.yml`.*
+
+```
+build  ──▶  deploy  ──▶  syndicate
+  │           │              │
+  │           │              └─ needs: deploy. An issue cannot exist
+  │           │                 before the page it links to is live.
+  │           └─ actions/deploy-pages@v5, environment github-pages
+  └─ npm test, npm run build (fires prebuild lint),
+     upload-pages-artifact + a plain dist artifact
 ```
 
-The `concurrency` group was absent in revision 2, which openly accepted a race
-that contradicted SC-003 and the amended Principle II. It is safe here
-precisely because every run reconstructs desired state (§5.2): a superseded
-pending run loses nothing, so `cancel-in-progress: false` merely serialises.
+Action versions are pinned to the ones GitHub's current starter workflow uses
+— `checkout@v4`, `setup-node@v4`, `upload-pages-artifact@v3`,
+`deploy-pages@v5`. Checked, not recalled: `deploy-pages` is on **v5**, and
+guessing v4 would have failed on the first run.
+
+Three properties worth stating explicitly:
+
+- **`needs: deploy` on the syndicate job** is the whole reason for revision 3
+  (FR-018c). Under Cloudflare this ordering was not expressible.
+- **Least privilege per job.** Top-level `permissions: {}` denies everything;
+  `build` takes `contents: read`, `deploy` takes `pages: write` +
+  `id-token: write`, `syndicate` takes `contents: read` + `issues: write`.
+  Nothing in the workflow can write to the repository.
+- **The syndicate job downloads the same `dist` artifact that was deployed**
+  rather than rebuilding, so the page-existence check (§5.2 step 2) runs
+  against the bytes that actually shipped, not a fresh build that could differ.
+
+`npm test` runs in `build`, so a broken selection or validation rule blocks the
+deploy and therefore blocks syndication.
+
+The old top-level `concurrency` group on the syndicate workflow is now the
+Pages group (`group: pages`, `cancel-in-progress: false`) covering all three
+jobs. That still satisfies SC-003 and the amended Principle II: runs serialise,
+and because every run reconstructs desired state (§5.2), a superseded pending
+run loses nothing.
+
+Note the `paths:` filter is gone. Every push to `main` deploys, because a CSS
+or layout change must republish the site. The syndicate job therefore runs on
+every push too, which is harmless — it is idempotent, and running more often
+makes it self-heal sooner.
 
 ### 5.2 What the script does
 
@@ -449,7 +469,9 @@ escaper does not exist here — the LinkedIn composer takes literal text.
 |---|---|---|---|
 | 1 | Teaser empty, over-length, or contains a URL | `prebuild` lint, locally **and in CI** (§5.1) | build fails; job aborts before any network call |
 | 2 | Filename not kebab-case | same | same |
-| 3 | Post selected but Astro emitted no page | `dist/` check (§5.2 step 2) | job fails naming the slug; no issue created |
+| 3 | Post selected but Astro emitted no page | `dist/` check (§5.2 step 2), against the downloaded deploy artifact | job fails naming the slug; no issue created |
+| 3a | Build fails | `build` job | deploy and syndicate never run; the previously deployed site stays live and **no issue is opened** — under Cloudflare this was the 2b blocker, because the two were independent |
+| 3b | Deploy fails | `deploy` job | syndicate never runs (`needs: deploy`); no issue can point at an undeployed page |
 | 4 | Issue list hits the 500 ceiling | explicit guard (§5.3) | job fails; dedupe is never run on a truncated set |
 | 5 | `gh issue create` fails | exit code | job fails visibly; no side effect; re-run recreates cleanly |
 | 6 | `gh issue list` fails | exit code, checked | job fails; **never** treated as "no issues exist" |
@@ -531,10 +553,10 @@ confirm still no second issue.
 
 | Phase | Scope | Done when |
 |---|---|---|
-| 1 | Astro site, collection, layouts, RSS, sitemap, `lint-posts.mjs`, fixtures | §7 Phase 1 green, deployed to Pages |
+| 1 | Astro site, collection, layouts, RSS, sitemap, `lint-posts.mjs`, fixtures | §7 Phase 1 green, deployed to GitHub Pages |
 | 2 | Obsidian config, gitignore, image round-trip | §7 Phase 2 green |
 | 3 | Giscus | §7 Phase 3 green, one real comment posted and deleted |
-| 4 | `syndicate-issue.yml`, `posts.mjs`, `syndicate-issue.mjs`, tests | §7 Phase 4 green and one real issue produced end to end |
+| 4 | `deploy.yml`, `posts.mjs`, `syndicate-issue.mjs`, tests | §7 Phase 4 green and one real issue produced end to end |
 
 **Blocked on the author**: the site name, which fixes the domain (`SITE_URL`)
 and the repository name (`data-repo`). Everything can be built against a

@@ -11,7 +11,7 @@ removed; replaced with a manual-assist workflow. See Revision History.
 fixed pre-approval). Revision 2 pending re-challenge — see Adversarial Review.
 
 **Input**: User description: "A personal blog written in Obsidian and built by
-Astro from the same directory, deployed to Cloudflare Pages, with Giscus
+Astro from the same directory, deployed to GitHub Pages, with Giscus
 comments backed by GitHub Discussions. On publish, a GitHub Action prepares the
 LinkedIn post text and canonical link as a GitHub issue for the author to paste
 — reach on LinkedIn without maintaining a LinkedIn integration."
@@ -23,6 +23,7 @@ LinkedIn post text and canonical link as a GitHub issue for the author to paste
 | 1 | 2026-09-02 | Original: automatic syndication via the LinkedIn Posts API, with `linkedinUrn` frontmatter as an idempotency ledger |
 | 2 | 2026-09-02 | **Scope narrowed.** LinkedIn API integration dropped entirely. The workflow now opens a GitHub issue containing paste-ready text; the author pastes it when convenient |
 | 2b | 2026-09-02 | Two blockers from the revision 2 adversarial gate fixed: validation was claimed to run before the workflow but never did, and deduplication depended on a mutable label that fails silently. See Adversarial Review |
+| 3 | 2026-09-02 | **Hosting moved from Cloudflare Pages to GitHub Pages.** Not a preference: hosting and syndication were independent processes, which is what made the 2b blocker possible. On GitHub Pages both are jobs in one workflow, so issue creation can depend on a successful deploy — retiring the failure class rather than guarding it |
 
 ### Why revision 2
 
@@ -258,6 +259,15 @@ test.
 - **FR-018b**: A post MUST NOT be offered for syndication unless its page
   actually exists in the build output. Frontmatter claiming a post is published
   is not sufficient evidence that a URL exists to link to.
+- **FR-018c**: Syndication MUST NOT run until the site has deployed
+  successfully. Hosting and syndication MUST NOT be independent processes whose
+  failure modes can diverge. *(Added at revision 3 — this is the requirement
+  the hosting move exists to satisfy. FR-018b remains in force alongside it:
+  a successful deploy proves the SITE is live, not that THIS post's page is in
+  it, which is also the only check tying the script's slug to the path the
+  build emitted.)*
+- **FR-018d**: The custom domain MUST be derived from the same single source as
+  the canonical URL, never restated in a second file.
 - **FR-019**: A filename that would not round-trip to the canonical slug MUST
   fail at build time.
 - **FR-020**: The teaser MUST be stored and emitted as literal plain text with
@@ -314,8 +324,12 @@ test.
   a post never propagate.
 - One author, low volume.
 - Post slugs, once published, are immutable.
-- Cloudflare Pages' Git integration provides build-on-push; no adapter or
-  server rendering is required.
+- GitHub Pages, deployed from Actions, provides build-on-push; no adapter or
+  server rendering is required. *(Revision 3 — was Cloudflare Pages.)* Accepted
+  costs: deploys take ~1–2 minutes rather than seconds; there are no
+  per-branch preview URLs, which matters little because `astro dev` renders
+  drafts locally; and "Enforce HTTPS" is a manual, one-time toggle that can
+  take up to 24 hours to become available after the domain is set.
 
 ## Adversarial Review
 

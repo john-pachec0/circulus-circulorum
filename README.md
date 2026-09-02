@@ -7,7 +7,7 @@ vault. Point **Astro** at it and it is a static site. There is no export step
 between them — the markdown file you type into is the one that gets built.
 
 Comments are GitHub Discussions on this repo, via [Giscus](https://giscus.app/).
-Deployment is Cloudflare Pages on push to `main`.
+Deployment is GitHub Pages on push to `main`.
 
 ---
 
@@ -203,15 +203,21 @@ LinkedIn post you can't edit.
 
 ## Deployment
 
-Cloudflare Pages, on push to `main`:
+GitHub Pages, from Actions, on push to `main`. One workflow, three jobs:
 
-| Setting | Value |
-|---|---|
-| Framework preset | Astro |
-| Build command | `npm run build` |
-| Output directory | `dist` |
-| Production branch | `main` |
-| Environment | `NODE_VERSION=24` |
+```
+build  ──▶  deploy  ──▶  syndicate
+```
+
+`syndicate` declares `needs: deploy`, so a syndication issue cannot be opened
+before the page it links to is actually live. That ordering is the reason
+hosting lives on GitHub rather than elsewhere — hosting and syndication used to
+be independent processes whose failures could diverge.
+
+Repo setup is Settings → Pages → **Source: GitHub Actions**, plus the custom
+domain and its DNS records. The `CNAME` file is generated at build time from
+`SITE_URL`, so the domain is defined once. Full steps in
+[`quickstart.md`](specs/001-blog-linkedin-syndication/quickstart.md).
 
 No adapter — the site is fully static.
 

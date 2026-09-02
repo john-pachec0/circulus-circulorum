@@ -4,12 +4,13 @@ Every claim below was checked against the live vendor documentation on
 2026-09-02, not recalled. Sources are linked inline so the next reader can
 re-derive rather than trust.
 
-> ## Revision 2 status
+> ## Section status (revisions 2 and 3)
 >
-> Spec revision 2 removed the LinkedIn API integration (see spec.md → Revision
-> History). Sections are therefore split:
+> Spec revision 2 removed the LinkedIn API integration; revision 3 moved
+> hosting to GitHub Pages (see spec.md → Revision History). Sections are
+> therefore split:
 >
-> | Section | Status under revision 2 |
+> | Section | Status |
 > |---|---|
 > | §1 `little` text format | **Historical** — no API call, so no escaping. Kept because it is the single best argument against reviving the API design |
 > | §2 comment scope conflict | **Historical** — the unanswerable question that motivated the change |
@@ -17,11 +18,12 @@ re-derive rather than trust.
 > | §4 Posts API contract | **Historical** |
 > | §5 comment contract, URN forms | **Historical** |
 > | §6 Astro 7 content collections | **LIVE** — still the basis of the schema and the slug constraint |
-> | §7 Cloudflare deployment | **LIVE**, minus the `[skip ci]` prefix finding, which no longer applies since nothing writes back to the repo |
+> | §7 Cloudflare deployment | **HISTORICAL as of revision 3** — hosting moved to GitHub Pages. Kept because the `[skip ci]` prefix correction and the build/workflow independence it documents are exactly what motivated the move. Current hosting facts are in §12 |
 > | §8 Giscus prerequisites | **LIVE** |
 > | §9 deploy/publish race | **Historical** — the author pastes long after the deploy finishes |
 > | §10 the 3000-char limit is uncited | **LIVE, downgraded** — now a build-time convenience guard, not a publication gate |
 > | §11 unverified claims | **LIVE** — in particular, that LinkedIn down-ranks posts containing links is still unverified, and still the reason the URL goes in a follow-up comment rather than the body |
+> | §12 GitHub Pages | **LIVE** — added at revision 3; supersedes §7 for hosting |
 >
 > Nothing is deleted. The historical sections are the record of what the API
 > route costs, and the reason the project is not taking it.
@@ -307,6 +309,44 @@ the next reader.
 - **Obsidian's `app.json` key names** (`userIgnoreFilters`,
   `attachmentFolderPath`) were not probed against Obsidian's own schema; they
   are settled empirically by the Phase 2 test.
+
+---
+
+## 12. GitHub Pages, confirmed (revision 3)
+
+Checked 2026-09-02 against live docs, because guessing action versions or DNS
+records here fails on the first real deploy.
+
+**Apex domain DNS.** Source:
+[Managing a custom domain](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).
+All four A records — `185.199.108.153`, `.109.153`, `.110.153`, `.111.153` —
+plus optional AAAA `2606:50c0:800{0,1,2,3}::153`. ALIAS/ANAME pointing at the
+default `github.io` domain is explicitly supported for providers that offer it.
+HTTPS is supported for apex domains but **"Enforce HTTPS" is a manual toggle
+that can take up to 24 hours to become available**.
+
+**Action versions.** Source: the
+[official Astro Pages starter workflow](https://github.com/actions/starter-workflows/blob/main/pages/astro.yml).
+`checkout@v4`, `setup-node@v4`, `configure-pages@v5`,
+`upload-pages-artifact@v3`, **`deploy-pages@v5`**. The deploy job declares
+`environment: { name: github-pages, url: ... }` and needs
+`pages: write` + `id-token: write`.
+
+`deploy-pages` being on **v5** is the reason this was checked rather than
+recalled — v4 was the plausible guess and would have failed on the first run.
+
+**One thing from that starter workflow deliberately NOT copied.** It builds
+with `--site "${{ steps.pages.outputs.origin }}"` from `configure-pages`. This
+project omits `configure-pages` entirely and keeps `site.config.mjs` as the
+single source of the URL. If the custom domain were unset or mid-propagation,
+that origin resolves to `https://<user>.github.io` — and the build would emit
+github.io canonical URLs into a LinkedIn issue, permanently. The starter's
+convenience is a correctness hazard for this specific design.
+
+**CNAME.** Generated at build time from `SITE_URL` by an `astro:build:done`
+hook, rather than committed as `public/CNAME`, so the domain has one
+definition. Verified by falsification: changing `SITE_URL` changes
+`dist/CNAME`.
 
 ---
 
