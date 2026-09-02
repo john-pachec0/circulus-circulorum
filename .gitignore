@@ -10,3 +10,6 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# Claude Code per-machine local permissions; not for a public repo
+.claude/settings.local.json
