@@ -163,11 +163,7 @@ pre code { background: none; padding: 0; }
 .site-footer .definition {
   font-family: ui-serif, Georgia, "Iowan Old Style", Palatino, serif;
   font-size: 0.9rem;
-  line-height: 1.6;
-  max-width: 30rem;
-  margin: 0 0 0.9rem;
-  padding-left: 0.85rem;
-  border-left: 2px solid var(--rule);
+  margin: 0 0 0.4rem;
 }
 
 .site-footer .definition em { font-style: italic; }
