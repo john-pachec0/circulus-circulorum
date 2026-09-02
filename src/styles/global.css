@@ -1,0 +1,163 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fdfdfc;
+  --fg: #1a1a18;
+  --muted: #6b6b63;
+  --rule: #e2e2dc;
+  --link: #3a5a8c;
+  --code-bg: #f2f2ee;
+  --measure: 34rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16161a;
+    --fg: #e6e6e1;
+    --muted: #9a9a92;
+    --rule: #2c2c33;
+    --link: #8fb3e0;
+    --code-bg: #202027;
+  }
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 1rem/1.65 ui-serif, Georgia, "Iowan Old Style", Palatino, serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+a { color: var(--link); }
+a:hover { text-decoration-thickness: 2px; }
+
+/* Header ------------------------------------------------------------------ */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.site-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+.site-title a { color: inherit; text-decoration: none; }
+.site-header nav { margin-left: auto; font-size: 0.9rem; }
+.site-header nav a { margin-left: 1rem; }
+
+/* Typography -------------------------------------------------------------- */
+
+h1, h2, h3 { line-height: 1.25; font-weight: 600; }
+h1 { font-size: 1.9rem; margin: 0 0 0.4rem; }
+h2 { font-size: 1.3rem; margin: 2.5rem 0 0.75rem; }
+h3 { font-size: 1.1rem; margin: 2rem 0 0.5rem; }
+
+.meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.post-body :is(img, video) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 2rem auto;
+  border-radius: 3px;
+}
+
+.post-body blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--rule);
+  color: var(--muted);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+  background: var(--code-bg);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+pre code { background: none; padding: 0; }
+
+/* Shiki emits both themes; show the one that matches. */
+@media (prefers-color-scheme: dark) {
+  .astro-code,
+  .astro-code span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+/* Post list --------------------------------------------------------------- */
+
+.post-list { list-style: none; margin: 0; padding: 0; }
+
+.post-list li + li {
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.post-list h2 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+.post-list h2 a { text-decoration: none; }
+.post-list h2 a:hover { text-decoration: underline; }
+.post-list p { margin: 0.4rem 0 0; }
+
+.draft-badge {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bg);
+  background: var(--muted);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  vertical-align: 0.15em;
+}
+
+.tags { margin-top: 0.5rem; font-size: 0.8rem; }
+.tags a { margin-right: 0.6rem; color: var(--muted); }
+
+/* Footer ------------------------------------------------------------------ */
+
+.site-footer {
+  margin-top: 4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.comments { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); }

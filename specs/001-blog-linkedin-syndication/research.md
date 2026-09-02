@@ -321,7 +321,7 @@ the next reader.
 |---|---|---|---|
 | 1 | Can `w_member_social` create comments? (§2) | **DEAD** — no API integration | — |
 | 2 | Does this app get a refresh token? (§3) | **DEAD** — no credential | — |
-| 3 | Does Astro resolve Obsidian's bare relative image paths? (§6) | **LIVE** | Phase 2 build test, fixture pinned `draft: false`. Fallback: four-line remark plugin normalising the prefix |
+| 3 | Does Astro resolve Obsidian's bare relative image paths? (§6) | **ANSWERED 2026-09-02 — yes** | Settled empirically, not by reading docs: a real 64×64 PNG at `src/content/posts/attachments/circulus.png`, referenced as `![](attachments/circulus.png)` with no `./` prefix, from a fixture pinned `draft: false`. The build emitted `/_astro/circulus.<hash>.webp` and the rendered HTML contains no raw `attachments/` path. **No remark plugin needed** — the contingency is dropped |
 | 4 | Does `content.article` need a thumbnail? | **DEAD** — no article posts | — |
 | 5 | Does GitHub's copy button on a fenced block in an issue body copy exactly the block's bytes, trailing newline included? | **LIVE** | Observation on the first real issue. FR-020 and SC-007 depend on it. If it misbehaves, the fallback is an attached file or a plain indented block |
 | 6 | Does LinkedIn's composer preserve pasted plain text — smart quotes, autocorrect, newlines, `@` interception, auto-linkification? | **LIVE, and structurally unverifiable in CI** | Eyeball the first real paste. Recorded here rather than asserted as a success criterion (see spec.md SC-007) |

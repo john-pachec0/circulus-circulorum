@@ -1,0 +1,42 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+import Giscus from '../components/Giscus.astro';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+const { title, description, pubDate, updated, tags, draft } = post.data;
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<BaseLayout title={title} description={description}>
+  <article>
+    <header>
+      <h1>{title} {draft && <span class="draft-badge">draft</span>}</h1>
+      <p class="meta">
+        <time datetime={pubDate.toISOString()}>{fmt(pubDate)}</time>
+        {updated && <> · updated <time datetime={updated.toISOString()}>{fmt(updated)}</time></>}
+      </p>
+      {
+        tags.length > 0 && (
+          <p class="tags">
+            {tags.map((t) => (
+              <a href={`/tags/${t}/`}>#{t}</a>
+            ))}
+          </p>
+        )
+      }
+    </header>
+
+    <div class="post-body">
+      <slot />
+    </div>
+  </article>
+
+  <Giscus />
+</BaseLayout>

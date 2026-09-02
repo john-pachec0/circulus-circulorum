@@ -1,0 +1,44 @@
+name: syndicate-issue
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/content/posts/**']
+  workflow_dispatch:
+
+# A duplicate issue is NOT harmless: the routine is to paste what an issue says
+# without re-deciding, so a spurious issue becomes a spurious public post.
+concurrency:
+  group: syndicate-issue
+  cancel-in-progress: false
+
+permissions:
+  contents: read # read, not write. Nothing here writes to the repository.
+  issues: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Load-bearing, do not remove to save time. This fires `prebuild` ->
+      # lint-posts.mjs and then builds the site, so the job aborts before its
+      # first network call if a teaser is invalid or a filename is wrong.
+      # Without it the workflow would offer posts that were never validated and
+      # whose pages may not exist — the site build and this workflow are
+      # independent, and a failed Cloudflare build leaves the old deploy live.
+      - run: npm run build
+
+      # Refuses to offer any post whose page is absent from dist/, which is
+      # also the only thing tying this script's slug to the path Astro emitted.
+      - run: node scripts/syndicate-issue.mjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

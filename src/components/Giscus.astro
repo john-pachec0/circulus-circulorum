@@ -1,0 +1,49 @@
+---
+// Comments via GitHub Discussions on this repo.
+//
+// data-repo-id and data-category-id come from giscus.app after the giscus app
+// is installed and Discussions are enabled — see quickstart.md §B. They are
+// public identifiers, not secrets, which is why they live in the component.
+//
+// Placeholders until the repo exists. The component renders a visible note
+// rather than a silently broken widget while they are unset, because a wrong
+// id fails as an empty box that is easy to miss.
+const REPO = 'japacheco/circulus-circulorum';
+const REPO_ID = '';
+const CATEGORY_ID = '';
+
+const configured = REPO_ID !== '' && CATEGORY_ID !== '';
+---
+
+<section class="comments">
+  {
+    configured ? (
+      // is:inline is REQUIRED. Without it Astro processes and bundles the tag,
+      // which drops the data-* attributes giscus reads off its own <script>
+      // element, and the widget silently never loads.
+      <script
+        is:inline
+        src="https://giscus.app/client.js"
+        data-repo={REPO}
+        data-repo-id={REPO_ID}
+        data-category="Comments"
+        data-category-id={CATEGORY_ID}
+        data-mapping="pathname"
+        data-strict="1"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="preferred_color_scheme"
+        data-lang="en"
+        crossorigin="anonymous"
+        async
+      />
+    ) : (
+      <p class="meta">
+        Comments are not wired up yet — set <code>REPO_ID</code> and{' '}
+        <code>CATEGORY_ID</code> in <code>src/components/Giscus.astro</code> from{' '}
+        <a href="https://giscus.app/">giscus.app</a>.
+      </p>
+    )
+  }
+</section>
