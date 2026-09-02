@@ -15,9 +15,16 @@ require the author to run a transform before committing is rejected.
 ### II. Publishing to LinkedIn is one-way and write-once
 
 The repo is the source of truth; LinkedIn is a snapshot taken at publish time.
-Nothing is ever read back from LinkedIn into the repo. A post is syndicated at
-most once, enforced by a ledger in the post's own frontmatter. Re-syndication
-is only ever a deliberate manual act.
+Nothing is ever read back from LinkedIn into the repo, and nothing in the repo
+holds a credential for it. A post is offered for syndication at most once,
+enforced by deduplicating against issues in any state — a closed issue counts,
+because closing it is how a post is marked done. Re-offering is a deliberate
+manual act.
+
+*Amended 2026-09-02 (spec 001 rev 2): the original wording named a ledger in
+the post's own frontmatter, which existed to make an irreversible API call
+safe. With no API call, the repo is never written to by machine and the ledger
+is unnecessary.*
 
 ### III. Fail loudly, publish nothing on doubt
 
@@ -55,4 +62,4 @@ Amendments are a commit to this file with a rationale in the message. The
 constitution outranks convenience; when a plan and this file disagree, the plan
 changes or the file is amended first.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-02 | **Last Amended**: 2026-09-02
+**Version**: 1.1.0 | **Ratified**: 2026-09-02 | **Last Amended**: 2026-09-02

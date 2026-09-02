@@ -1,9 +1,30 @@
 # Phase 0 Research — 001-blog-linkedin-syndication
 
 Every claim below was checked against the live vendor documentation on
-2026-09-02, not recalled. Two findings move a stated assumption into the
-"unverified" column; one contradicts the brief outright. Sources are linked
-inline so the next reader can re-derive rather than trust.
+2026-09-02, not recalled. Sources are linked inline so the next reader can
+re-derive rather than trust.
+
+> ## Revision 2 status
+>
+> Spec revision 2 removed the LinkedIn API integration (see spec.md → Revision
+> History). Sections are therefore split:
+>
+> | Section | Status under revision 2 |
+> |---|---|
+> | §1 `little` text format | **Historical** — no API call, so no escaping. Kept because it is the single best argument against reviving the API design |
+> | §2 comment scope conflict | **Historical** — the unanswerable question that motivated the change |
+> | §3 refresh tokens | **Historical** — no credential exists |
+> | §4 Posts API contract | **Historical** |
+> | §5 comment contract, URN forms | **Historical** |
+> | §6 Astro 7 content collections | **LIVE** — still the basis of the schema and the slug constraint |
+> | §7 Cloudflare deployment | **LIVE**, minus the `[skip ci]` prefix finding, which no longer applies since nothing writes back to the repo |
+> | §8 Giscus prerequisites | **LIVE** |
+> | §9 deploy/publish race | **Historical** — the author pastes long after the deploy finishes |
+> | §10 the 3000-char limit is uncited | **LIVE, downgraded** — now a build-time convenience guard, not a publication gate |
+> | §11 unverified claims | **LIVE** — in particular, that LinkedIn down-ranks posts containing links is still unverified, and still the reason the URL goes in a follow-up comment rather than the body |
+>
+> Nothing is deleted. The historical sections are the record of what the API
+> route costs, and the reason the project is not taking it.
 
 ---
 
