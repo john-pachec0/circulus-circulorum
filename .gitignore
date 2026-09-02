@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+.obsidian/workspace.json
+.env
+.env.*
+.DS_Store
