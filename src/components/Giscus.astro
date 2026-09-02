@@ -5,12 +5,15 @@
 // is installed and Discussions are enabled — see quickstart.md §B. They are
 // public identifiers, not secrets, which is why they live in the component.
 //
-// Placeholders until the repo exists. The component renders a visible note
-// rather than a silently broken widget while they are unset, because a wrong
-// id fails as an empty box that is easy to miss.
-const REPO = 'john-pachec0/circulus-circulorum';
-const REPO_ID = '';
-const CATEGORY_ID = '';
+// Fetched from the GitHub GraphQL API, not copied out of giscus.app:
+//   repository(owner:..., name:...) { id, discussionCategories { nodes { id name } } }
+// The component still renders a visible note if either is blank, because a
+// wrong or missing id fails as an empty box that is easy to miss.
+// Typed as `string`, not inferred as literals, so the guard below stays a real
+// runtime check rather than a comparison TypeScript can prove always true.
+const REPO: string = 'john-pachec0/circulus-circulorum';
+const REPO_ID: string = 'R_kgDOUMYKCg';
+const CATEGORY_ID: string = 'DIC_kwDOUMYKCs4DEv4-';
 
 const configured = REPO_ID !== '' && CATEGORY_ID !== '';
 ---
